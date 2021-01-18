@@ -1,6 +1,17 @@
 #!/bin/bash
+  
+URI=$(grep ^uri /etc/ldap/ldap.conf | awk '{print $2}' | awk -F, '{print $1}')
+BASE=$(grep 'base passwd' /etc/ldap/ldap.conf | awk '{print $3}')
+BINDDN=$(grep ^binddn /etc/ldap/ldap.conf | awk '{print $2}')
+BINDPW=$(grep ^bindpw /etc/ldap/ldap.conf | awk '{print $2}')
 
-URI=$(grep ^uri /etc/ldap/ldap.conf |awk '{print $2}' |awk -F, '{print $1}')
-BASE=$(grep ^base /etc/ldap/ldap.conf |awk '{print $2}')
+DEBUG=0
+if [ $DEBUG -eq 1 ]; then
+  echo URI: ${URI}
+  echo BASE: ${BASE}
+  echo BINDDN: ${BINDDN}
+  echo BINDPW: ${BINDPW}
+  echo INPUT: $1
+fi
 
-ldapsearch -x -H ${URI} -b ${BASE} "(&(objectClass=posixAccount)(uid=$1))" sshPublicKey | sed -n '/^ /{H;d};/sshPublicKey:/x;$g;s/\n *//g;s/sshPublicKey: //gp'
+ldapsearch -x -H ${URI} -D ${BINDDN} -w ${BINDPW} -b ${BASE} "(&(objectClass=posixAccount)(uid=$1))" sshPublicKey | sed -n '/^ /{H;d};/sshPublicKey::/x;$g;s/\n *//g;s/sshPublicKey:: //gp' | base64 -d
